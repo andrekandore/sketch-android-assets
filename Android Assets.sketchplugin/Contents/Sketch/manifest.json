@@ -1,0 +1,25 @@
+{
+    "author": "andrekandore",
+    "commands" : [
+        {
+            "name": "Create Android Slice",
+            "identifier": "create-slice",
+            "shortcut": "ctrl shift s l",
+            "handler" : "onRun",
+            "script": "GenerateAndroidAssets.cocoascript"
+        }
+    ],
+    "menu" : {
+        "isRoot" : true,
+        "shortcut" : "",
+        "items" : [
+            "create-slice"
+        ],
+        "title" : "Create Android Slice"
+    },
+    "identifier": "com.andrekandore.slicedroid",
+    "version": "1.0.0",
+    "description" : "A tool creating android-ready slices.",
+    "authorEmail" : "andre@andrekandore.com",
+    "name" : "Slicedroid"
+}

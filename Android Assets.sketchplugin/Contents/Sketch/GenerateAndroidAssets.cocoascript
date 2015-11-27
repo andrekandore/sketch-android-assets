@@ -1,0 +1,153 @@
+// Generate Android assets from all slices in current page (shift cmd a)
+// Assumes pixel count in Sketch is mdpi, so 1dp=1px
+// Saves off all assets to path to current document + drawable-{ldpi,mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}
+
+var onRun = function(context) {
+
+ fucntion forEachObjectect(array, callback){
+        var count = [array count];
+        for (var i = 0; i < count; i++){
+            var el = [array objectAtIndex: i];
+            callback(el);
+        }
+    }
+
+    function main(){
+        var doc = context.document;
+        var fileUrl = [doc fileURL];
+        
+        if (fileUrl == null) {
+            alert("You need to save your document for me to know where to save it");
+            return;
+        }
+
+        var density = null;
+        if (density == null) {
+            density = askForDefaultDensity();
+        }
+
+        var factors = getDensityFactors(density);
+
+        var slicesToOutput = doc.selectedLayers();
+        library.sandbox.forEachObject(slicesToOutput, function(slice){
+            process_slice(slice, doc, base_dir, factors);
+        });
+
+        library.sandbox.openInFinder(base_dir + "/drawable-hdpi");
+    }
+
+    function alert(msg){
+        var app = [NSApplication sharedApplication];
+        [app displayDialog:msg withTitle:"Hey"];
+    }
+
+    // Return current working directory
+    // This works better for the designer's workflow, as they mostly want to
+    // save assets in the current directory
+    function get_cwd(){
+        var file_url = [doc fileURL],
+        file_path = [file_url path],
+        base_dir = file_path.split([doc displayName])[0];
+        return base_dir;
+    }
+
+    // Let the user specify a directory
+    function get_dir_from_prompt(){
+
+        var panel = [NSOpenPanel openPanel];
+        [panel setMessage:"Where do you want to place your assets?"];
+        [panel setCanChooseDirectories: true];
+        [panel setCanChooseFiles: false];
+        [panel setCanCreateDirectories: true];
+        var default_dir = [[doc fileURL] URLByDeletingLastPathComponent];
+        [panel setDirectoryURL:default_dir];
+
+
+
+        if ([panel runModal] == NSOKButton){
+        var message = [panel filename];
+        return message;
+        }
+    }
+
+    function askForDefaultDensity(){
+        var selectedItemIndex = 0;
+        var items = ["ldpi","mdpi","hdpi","xhdpi","xxhdpi","xxxhdpi"];
+
+        var accContainer = [[NSView alloc] initWithFrame:NSMakeRect(0,0,200,25)];
+
+        var accessory = [[NSComboBox alloc] initWithFrame:NSMakeRect(0,0,200,25)];
+        [accessory addItemsWithObjectValues:items];
+        [accessory selectItemAtIndex:selectedItemIndex];
+
+        [accContainer addSubview:accessory];
+
+        var alert = [[NSAlert alloc] init];
+        [alert setMessageText:"What should be the base density for this Sketch document≈?"];
+        [alert addButtonWithTitle:'OK']
+        [alert addButtonWithTitle:'Cancel']
+        [alert setAccessoryView:accContainer]
+
+
+        var responseCode = [alert runModal]
+        var sel = [accessory indexOfSelectedItem]
+
+        var result = items[sel];
+
+        return result;
+    }
+
+    function santize(fileName) {
+      return fileName.replace(/[^\w\d]/g, '_').toLowerCase();
+    }
+
+    function process_slice(slice, doc, base_dir, factors){
+        log("Will process slices");
+        var frame = [slice frame];
+        var slice_name = [slice name];
+
+        for (var name in factors){
+        var factor = factors[name];
+        log("Processing " + slice_name + " " + name + " (" + factor + ")");
+        var version = copy_layer_with_factor(slice, factor);
+        var file_name = base_dir + "/drawable-" + name + "/" + santize(slice_name) + ".png";
+        [doc saveArtboardOrSlice: version toFile:file_name];
+        log("Saved " + file_name);
+        }
+    }
+
+    function copy_layer_with_factor(original_slice, factor){
+        var copy = [original_slice duplicate];
+        var frame = [copy frame];
+
+        //var rect = [copy rectByAccountingForStyleSize:[[copy absoluteRect] rect]],
+        var rect = [copy absoluteDirtyRect],
+            slice = [MSExportRequest requestWithRect:rect scale:factor];
+
+        [copy removeFromParent];
+        return slice;
+    }   
+    
+    function getDensityFactors(baseDensityName) {
+        
+        log("Looking for factor " + baseDensityName);
+        var factors = {
+            "ldpi":0.5,
+            "mdpi":1,
+            "hdpi": 1.5,
+            "xhdpi": 2,
+            "xxhdpi": 2.5,
+            "xxxhdpi": 3
+        };
+        
+        var baseDensityFactor = factors[baseDensityName];
+        var result = {};
+        for (var key in factors){
+            result[key] = factors[key] / baseDensityFactor;
+        }
+        
+        return result;
+    }
+    
+    main();
+};
